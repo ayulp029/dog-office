@@ -1,0 +1,57 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #2b2118; overflow: hidden;
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+#viewport { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#stage { position: relative; width: 1024px; height: 768px; flex: none; transform-origin: center center;
+  background: #f4e6cf; overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#scene { position: absolute; left: 0; top: 0; width: 1024px; height: 768px; display: block; }
+#labels { position: absolute; inset: 0; pointer-events: none; }
+
+.label { position: absolute; left: 0; top: 0; width: 112px; padding: 4px 6px 6px; border-radius: 10px;
+  background: rgba(58, 40, 28, 0.84); color: #fff8ec; text-align: center; line-height: 1.2;
+  box-shadow: 0 2px 6px rgba(40, 20, 0, 0.35); pointer-events: auto; cursor: pointer;
+  will-change: transform; border: 1px solid rgba(255, 230, 190, 0.25); }
+.label .nm { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap; }
+.label .rl { font-size: 11px; color: #f1d7a8; white-space: nowrap; }
+.label .tk { font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.label .bar { position: relative; height: 12px; margin-top: 3px; border-radius: 6px; background: rgba(255,255,255,0.22); overflow: hidden; }
+.label .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px;
+  background: linear-gradient(90deg, #ffb347, #ff8a3d); }
+.label .pc { position: absolute; inset: 0; font-size: 10px; font-weight: 700; line-height: 12px; color: #fff;
+  text-shadow: 0 0 2px #3a281c, 0 0 2px #3a281c; }
+.label.rest .tk, .label.idle .tk, .label.off .tk { color: #cfe8ff; }
+.label.rest, .label.idle, .label.off { padding-bottom: 5px; }
+.label.off { background: rgba(80, 80, 80, 0.8); }
+.label.sel { outline: 2px solid #ffd36b; }
+.label::after { content: ""; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent;
+  border-top-color: rgba(58, 40, 28, 0.84); border-bottom: 0; }
+
+#hud { position: absolute; left: 0; top: 0; right: 0; display: flex; justify-content: space-between; padding: 8px 12px;
+  pointer-events: none; }
+#title, #clock { background: rgba(58, 40, 28, 0.78); color: #fff8ec; border-radius: 12px; padding: 4px 12px;
+  font-size: 14px; font-weight: 700; }
+#clock { font-weight: 500; }
+#clock-time { font-variant-numeric: tabular-nums; font-weight: 700; }
+#clock-upd { margin-left: 8px; font-size: 11px; color: #f1d7a8; }
+#demo-note { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: #fff8ec; background: rgba(58,40,28,0.7);
+  padding: 2px 8px; border-radius: 8px; }
+#debug { position: absolute; right: 8px; bottom: 8px; font: 11px monospace; color: #fff; background: rgba(0,0,0,.6); padding: 3px 6px; }
+
+#card { position: absolute; width: 724px; height: 70px; padding: 6px 44px 6px 14px; display: grid;
+  grid-template-columns: 150px 230px 1fr; column-gap: 14px; align-items: center; border-radius: 14px; background: #fffaf0;
+  color: #3a281c; box-shadow: 0 6px 18px rgba(40, 20, 0, 0.45); border: 2px solid #e9c98c; z-index: 20; }
+#card-close { position: absolute; right: 6px; top: 4px; width: 32px; height: 32px; border: 0; background: transparent;
+  font-size: 22px; color: #8a6a4a; cursor: pointer; }
+#card .c-name { font-size: 18px; font-weight: 700; }
+#card .c-role { font-size: 12px; color: #8a6a4a; margin-bottom: 6px; }
+#card .c-st { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 10px; color: #fff; background: #e8863a; }
+#card .c-st.idle { background: #4a90c8; } #card .c-st.resting { background: #7a6fb8; } #card .c-st.off { background: #888; }
+#card .c-row { font-size: 13px; margin-top: 6px; }
+#card .c-bar { position: relative; height: 14px; border-radius: 7px; background: #eadbbd; overflow: hidden; margin-top: 4px; }
+#card .c-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #ffb347, #ff8a3d); border-radius: 7px; }
+#card .c-pc { position: absolute; inset: 0; text-align: center; font-size: 11px; font-weight: 700; line-height: 14px; color: #3a281c; }
+#card[hidden] { display: none; }
+#card-body { display: contents; }
+#card .c-row { margin-top: 0; }
+#card .c-role { margin-bottom: 0; }
+#card .c-msg { margin-top: 0; font-size: 13px; padding: 6px 8px; background: #fdebc8; border-radius: 8px; }

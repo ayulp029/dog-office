@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>狗狗虛擬辦公室</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <canvas id="scene" width="1024" height="768"></canvas>
+    <div id="labels"></div>
+    <div id="hud">
+      <div id="title">🐾 <span id="office-name">狗狗虛擬辦公室</span></div>
+      <div id="clock"><span id="clock-time">--:--</span><span id="clock-upd"></span></div>
+    </div>
+    <div id="demo-note" hidden>目前用示範資料</div>
+    <div id="debug" hidden></div>
+    <aside id="card" hidden role="dialog" aria-live="polite">
+      <button id="card-close" aria-label="關閉">×</button>
+      <div id="card-body"></div>
+    </aside>
+  </div>
+</div>
+<script src="js/draw.js"></script>
+<script src="js/config.js"></script>
+<script src="js/breeds.js"></script>
+<script src="js/breeds_extra.js"></script>
+<script src="js/head.js"></script>
+<script src="js/body.js"></script>
+<script src="js/side.js"></script>
+<script src="js/props.js"></script>
+<script src="js/props2.js"></script>
+<script src="js/furniture.js"></script>
+<script src="js/room.js"></script>
+<script src="js/seat.js"></script>
+<script src="js/walker.js"></script>
+<script src="js/data.js"></script>
+<script src="js/labels.js"></script>
+<script src="js/card.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
