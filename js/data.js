@@ -59,6 +59,31 @@
     }
   };
 
+  // usage.json（Grok Bot 本週用量）：驗證失敗或讀不到一律回傳 null，不回退成假數字
+  DO.normalizeUsage = function (raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const used = raw.usedPercent;
+    if (typeof used !== 'number' || !isFinite(used) || used < 0 || used > 100) return null;
+    if (typeof raw.resetAt !== 'string' || typeof raw.updatedAt !== 'string') return null;
+    const r = Date.parse(raw.resetAt), u = Date.parse(raw.updatedAt);
+    if (isNaN(r) || isNaN(u)) return null;
+    return { usedPercent: used, resetAt: r, updatedAt: u, plan: typeof raw.plan === 'string' ? raw.plan : '' };
+  };
+  DO.fetchUsage = async function () {
+    try {
+      const r = await fetch('usage.json?ts=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return DO.normalizeUsage(await r.json());
+    } catch (e) {
+      return null;
+    }
+  };
+  // 台北時間 M/D（週幾）HH:MM（台北沒有日光節約，直接 +8 小時）
+  DO.taipeiDate = function (ms) {
+    const u = new Date(ms + 8 * 3600e3), p = (n) => String(n).padStart(2, '0');
+    return (u.getUTCMonth() + 1) + '/' + u.getUTCDate() + '（' + '日一二三四五六'[u.getUTCDay()] + '）' + p(u.getUTCHours()) + ':' + p(u.getUTCMinutes());
+  };
+
   // 台北時間 HH:MM
   DO.taipeiTime = function (d) {
     try {

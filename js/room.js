@@ -1,4 +1,4 @@
-// 房間外殼：地板、三面牆（含窗戶與窗外景）、梁、白板、時鐘、燈光
+// 房間外殼：地板、三面牆（含窗戶與窗外景）、梁、時鐘、燈光
 import * as THREE from 'three';
 import { box, cyl, mat, canvasTex, rng } from './kit.js';
 
@@ -51,24 +51,6 @@ function outdoorTex() {
   });
 }
 
-function boardTex() {
-  return canvasTex(512, 256, (c, w, h) => {
-    c.fillStyle = '#fdfdf8'; c.fillRect(0, 0, w, h);
-    c.fillStyle = '#3a4a6a'; c.font = 'bold 34px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
-    c.fillText('本週目標', 26, 50);
-    c.font = '24px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
-    ['塔防成長系統驗收', '京都五日遊行程', '本月預算對帳'].forEach((s, i) => {
-      c.fillStyle = ['#e0703a', '#3a9a6a', '#7a5ac8'][i]; c.fillRect(30, 80 + i * 44, 16, 16);
-      c.fillStyle = '#444'; c.fillText(s, 58, 97 + i * 44);
-    });
-    // 小長條圖與腳印
-    [[60, '#f2a65a'], [95, '#6fb7d9'], [130, '#8fce8a'], [80, '#e58aa0']].forEach(([bh, col], i) => { c.fillStyle = col; c.fillRect(330 + i * 40, 200 - bh, 28, bh); });
-    c.strokeStyle = '#3a4a6a'; c.lineWidth = 3; c.beginPath(); c.moveTo(320, 60); c.lineTo(320, 202); c.lineTo(494, 202); c.stroke();
-    c.fillStyle = '#e0703a'; c.beginPath(); c.ellipse(455, 44, 13, 11, 0, 0, 7); c.fill();
-    [[-15, -14], [-5, -21], [6, -21], [16, -14]].forEach(([dx, dy]) => { c.beginPath(); c.arc(455 + dx, 44 + dy, 5, 0, 7); c.fill(); });
-  });
-}
-
 // 沿區域 x 軸的一面牆；區域 +z 是室內側。openings: [{c, w}]（窗中心與寬）
 function wall(len, h, color, openings, backdrop) {
   const g = new THREE.Group(), frame = '#fbf7ef';
@@ -116,17 +98,13 @@ export function buildRoom(scene, CFG) {
 
   // 露出的木梁：貼著後牆與兩側牆頂，不擋到狗
   const beams = new THREE.Group(); scene.add(beams);
-  [-9.4, -4.7, 0, 4.7, 9.4].forEach((x) => box(beams, 0.3, 0.3, 2.6, '#b98f62', x, R.h - 0.3, R.z0 + 1.3));
-  box(beams, W, 0.3, 0.3, '#b98f62', cx, R.h - 0.3, R.z0 + 2.6);
+  [-9.4, -4.7, 4.7, 9.4].forEach((x) => box(beams, 0.3, 0.3, 2.6, '#b98f62', x, R.h - 0.3, R.z0 + 1.3));
+  // 橫梁中段留空，才不會從總覽視角擋到後牆中央的用量儀表板
+  [-1, 1].forEach((s) => box(beams, R.x1 - 4.55, 0.3, 0.3, '#b98f62', s * (R.x1 + 4.55) / 2, R.h - 0.3, R.z0 + 2.6));
 
-  // 白板與時鐘（後牆中央）
+  // 時鐘：後牆中央讓給用量儀表板（boss.js），時鐘掛在儀表板左邊
   const z = R.z0 + 0.05;
-  box(scene, 5.3, 2.7, 0.1, '#c9ced6', 0, 1.75, z);
-  const wb = new THREE.Mesh(new THREE.PlaneGeometry(5.0, 2.4), new THREE.MeshStandardMaterial({ map: boardTex(), roughness: 0.6 }));
-  wb.position.set(0, 3.1, z + 0.06); scene.add(wb);
-  box(scene, 2.2, 0.08, 0.22, '#aeb4bd', 0, 1.68, z + 0.1);
-
-  const clock = new THREE.Group(); clock.position.set(0, 5.15, z); scene.add(clock);
+  const clock = new THREE.Group(); clock.position.set(-3.9, 4.4, z); scene.add(clock);
   const rim = cyl(clock, 0.56, 0.08, '#5a4636', 0, 0, 0); rim.rotation.x = Math.PI / 2; rim.position.set(0, 0, 0.04);
   const face = cyl(clock, 0.48, 0.02, '#fffdf6', 0, 0, 0, false); face.rotation.x = Math.PI / 2; face.position.set(0, 0, 0.085);
   for (let i = 0; i < 12; i++) {

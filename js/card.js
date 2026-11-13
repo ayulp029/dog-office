@@ -1,15 +1,18 @@
 // 詳情卡：點狗（滑鼠或觸控）開啟，點空白或 × 關閉。左邊放真實頭像 assets/avatars/<id>.png
 const STXT = { working: '工作中', idle: '待命', resting: '休息中', off: '離線' };
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export class Card {
   constructor(getDog, onChange) {
-    this.id = null; this.key = ''; this.getDog = getDog; this.onChange = onChange;
+    this.id = null; this.info = false; this.key = ''; this.getDog = getDog; this.onChange = onChange;
     this.el = document.getElementById('card'); this.body = document.getElementById('card-body');
     document.getElementById('card-close').addEventListener('click', (e) => { e.stopPropagation(); this.close(); });
   }
-  open(id) { if (!this.getDog(id)) return; this.id = id; this.key = ''; this.el.hidden = false; this.render(); this.onChange(id); }
-  close() { if (!this.id) return; this.id = null; this.el.hidden = true; this.onChange(null); }
+  open(id) { if (!this.getDog(id)) return; this.info = false; this.id = id; this.key = ''; this.el.hidden = false; this.render(); this.onChange(id); }
+  close() { if (!this.id && !this.info) return; this.id = null; this.info = false; this.el.hidden = true; this.onChange(null); }
+  // 非狗的資訊卡（用量儀表板）：共用同一張卡，所以不會跟狗的卡同時出現
+  openInfo(html) { this.id = null; this.info = true; this.fill = null; this.onChange(null); this.el.hidden = false; this.setInfo(html); }
+  setInfo(html) { if (this.info) this.body.innerHTML = html; }
   toggle(id) { if (this.id === id) this.close(); else this.open(id); }
 
   // 每幀呼叫：內容有變才重排 DOM，進度條只改寬度

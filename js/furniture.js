@@ -1,6 +1,7 @@
 // 家具：辦公桌椅、盆栽、飲水機、咖啡吧、書架、地毯
 import * as THREE from 'three';
 import { box, cyl, pot, ball, mat, rng } from './kit.js';
+import { bossDesk } from './boss.js';
 
 const WOOD = '#e2c49a', WOOD_D = '#b98f62', WHITE = '#fbf7ef', DARK = '#3b3f48', GREY = '#c9ced6';
 
@@ -83,7 +84,7 @@ function bookshelf(scene, x, z) {
 
 export function buildFurniture(scene, DO) {
   const CFG = DO.CFG, R = CFG.room, screens = {};
-  DO.ORDER.forEach((id) => { screens[id] = desk(scene, DO.SEATS[id], DO.ACCENT[id], CFG); });
+  DO.ORDER.forEach((id) => { const s = DO.SEATS[id]; screens[id] = s.boss ? bossDesk(scene, s, DO.ACCENT[id]) : desk(scene, s, DO.ACCENT[id], CFG); });
 
   // 地毯：中央大地毯 + 前排走道小地毯
   box(scene, 21, 0.03, 7.8, '#9cc5c1', 0, 0, 0.5, false).receiveShadow = true;
@@ -95,7 +96,7 @@ export function buildFurniture(scene, DO) {
   [[R.x0 + 1.1, R.z0 + 1.0, 1.25], [R.x1 - 1.1, R.z0 + 1.0, 1.25], [R.x0 + 1.0, R.z1 - 0.9, 1.1], [R.x1 - 1.0, R.z1 - 0.9, 1.1],
     [-3.6, R.z0 + 0.8, 0.9], [3.6, R.z0 + 0.8, 0.9], [R.x1 - 0.9, -1.4, 0.95]].forEach(([x, z, s]) => plant(scene, x, z, s));
   // 右牆邊的小沙發，讓空間不那麼空
-  const s = new THREE.Group(); s.position.set(R.x1 - 0.9, 0, -5.2); scene.add(s);
+  const s = new THREE.Group(); s.position.set(R.x1 - 0.7, 0, -5.2); scene.add(s);
   box(s, 1.2, 0.5, 3.2, '#e8b9a0', 0, 0.15, 0); box(s, 0.35, 0.8, 3.2, '#e0a78c', 0.45, 0.6, 0);
   box(s, 1.2, 0.35, 0.3, '#e0a78c', 0, 0.6, -1.5); box(s, 1.2, 0.35, 0.3, '#e0a78c', 0, 0.6, 1.5);
   box(s, 0.5, 0.5, 0.5, '#f2c14e', 0.1, 0.65, -0.8).rotation.y = 0.4;

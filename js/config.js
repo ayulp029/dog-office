@@ -14,22 +14,26 @@
     coffee: { x: 13.1, z: 2.65, stand: { x: 11.5, z: 2.65 } },      // 咖啡機（右牆）與狗停的位置
   });
 
-  // A 排最後面、B 排中間（錯開半格）、C 排最前面；每排由左到右
+  // A 排最後面（中間留缺口給主管位）、B 排中間、C 排最前面；每排由左到右
   const ROWS = {
     A: ['shiba', 'apo', 'maomao', 'nana', 'director'],
-    B: ['xuebo', 'keke', 'butler', 'bibi'],
+    B: ['xuebo', 'keke', 'bibi'],
     C: ['lady', 'lala', 'xiaoha', 'jinjin', 'mumu'],
   };
+  const ROWX = { A: [-8.0, -4.6, 4.2, 7.6, 11.0], B: [-6.3, 0, 6.3] };  // 沒列的排用 pitch 均分
 
   DO.SEATS = {};
   DO.ORDER = [];
   Object.keys(ROWS).forEach((row) => {
     const ids = ROWS[row];
     ids.forEach((id, i) => {
-      DO.SEATS[id] = { id, row, idx: i, x: (i - (ids.length - 1) / 2) * CFG.pitch, z: CFG.rowZ[row] };
+      DO.SEATS[id] = { id, row, idx: i, x: ROWX[row] ? ROWX[row][i] : (i - (ids.length - 1) / 2) * CFG.pitch, z: CFG.rowZ[row] };
       DO.ORDER.push(id);
     });
   });
+  // 主管位：狗管家在 A 排缺口裡、靠後牆正中央；走路時先往前穿過缺口到 A 排前方走道
+  DO.SEATS.butler = { id: 'butler', row: 'boss', idx: 0, x: 0, z: -6.5, boss: true, aisleZ: CFG.rowZ.A + CFG.aisle };
+  DO.ORDER.push('butler');
 
   // 每隻狗的代表色（椅墊、馬克杯、桌墊），取自頭像配件
   DO.ACCENT = {

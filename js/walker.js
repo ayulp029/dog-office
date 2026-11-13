@@ -3,7 +3,7 @@
 const SPEED = 2.7;
 
 export function startWalk(dog, destKey, CFG, opt) {
-  const D = CFG[destKey].stand, a = dog.seat.z + CFG.aisle, h = dog.home;
+  const D = CFG[destKey].stand, a = dog.seat.aisleZ != null ? dog.seat.aisleZ : dog.seat.z + CFG.aisle, h = dog.home;
   const pts = [[h.x, h.z], [h.x, a], [D.x, a], [D.x, D.z]].filter((p, i, l) => i === 0 || Math.hypot(p[0] - l[i - 1][0], p[1] - l[i - 1][1]) > 0.01);
   dog.walk = { pts, i: 1, dir: 1, phase: 'go', dest: destKey, hold: opt && opt.hold != null ? opt.hold : 3.5 };
   dog.mode = 'walking';

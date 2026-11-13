@@ -7,6 +7,7 @@ import { Dog, loadDogArt } from './dogs.js';
 import { startWalk, updateWalk } from './walker.js';
 import { Labels } from './labels.js';
 import { Card } from './card.js';
+import { buildUsageBoard, usageCardHtml } from './boss.js';
 
 const DO = window.DO, CFG = DO.CFG, R = CFG.room;
 const Q = new URLSearchParams(location.search);
@@ -43,6 +44,7 @@ controls.addEventListener('change', () => {   // 目標點不離開房間，避�
 
 const room = buildRoom(scene, CFG);
 const { screens } = buildFurniture(scene, DO);
+const board = buildUsageBoard(scene, DO);   // 後牆的 Grok Bot 用量儀表板
 const ring = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.12, 40).rotateX(-Math.PI / 2),
   new THREE.MeshBasicMaterial({ color: 0xffc94d, transparent: true, opacity: 0.95, depthWrite: false }));
 ring.visible = false; ring.renderOrder = 2; scene.add(ring);
@@ -51,8 +53,8 @@ let dogs = [], byId = {}, labels, card, loaded = false, nextWalk = 6, last = 0, 
 const t0 = performance.now(), pts = {}, v3 = new THREE.Vector3(), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 
 // 視角：az 方位角、polar 仰角（0 = 正上方）、dist 距離
-function setView(az, polar, dist, tx, tz) {
-  controls.target.set(tx, 1.1, tz);
+function setView(az, polar, dist, tx, tz, ty) {
+  controls.target.set(tx, ty || 1.1, tz);
   camera.position.setFromSphericalCoords(dist, polar, az).add(controls.target);
   controls.update();
 }
@@ -61,6 +63,7 @@ function defaultView() {
   if (sh === 'cooler') setView(-0.3, 0.92, 24, -3, 2.2);
   else if (sh === 'coffee') setView(0.3, 0.92, 24, 3, 2.2);
   else if (sh === 'closer') setView(0.3, 0.95, 20, 0, 1.8);
+  else if (sh === 'boss') setView(0.15, 1.36, 9.5, 0, -7.5, 2.5);   // 近拍主管桌與用量儀表板
   else {
     const fit = Math.min(78, 31 * Math.max(1, 1.5 / a));   // 直式螢幕自動拉遠，才看得到整間
     controls.maxDistance = Math.max(48, fit * 1.15);
@@ -91,7 +94,18 @@ function applyData(res) {
   loaded = true;
 }
 
+// usage.json：讀不到或格式不對時 DO.fetchUsage 回傳 null，儀表板與卡片只顯示「用量資料讀不到」
+async function pollUsage() {
+  if (board.set(await DO.fetchUsage())) card.setInfo(usageCardHtml(board.view));
+}
+function hitBoard(x, y) {
+  ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.intersectObject(board.mesh, false).length > 0;
+}
+
 async function poll() {
+  pollUsage();
   try { applyData(await DO.fetchStatus()); } catch (e) { /* 保持現狀 */ }
   setTimeout(poll, CFG.poll);
 }
@@ -115,7 +129,9 @@ function bindTap() {
     down = null;
     if (moved > 8 || dt > 700) return;        // 那是拖曳旋轉，不是點擊
     const d = pick(e.clientX, e.clientY);
-    if (d) card.toggle(d.id); else card.close();
+    if (d) card.toggle(d.id);
+    else if (hitBoard(e.clientX, e.clientY) && !card.info) card.openInfo(usageCardHtml(board.view));
+    else card.close();
   });
   canvas.addEventListener('pointercancel', () => { down = null; });
 }
@@ -158,6 +174,7 @@ function frame(now) {
     clockAt = sec;
     const hm = DO.taipeiTime(); $('clock-time').textContent = hm;
     room.setClock(Number(hm.slice(0, 2)), Number(hm.slice(3, 5)));
+    if (board.tick(Date.now())) card.setInfo(usageCardHtml(board.view));   // 倒數文字有變才重畫
   }
   renderer.render(scene, camera);
   if (DEBUG) {
@@ -177,15 +194,17 @@ async function start() {
   bindTap();
   $('reset-view').addEventListener('click', defaultView);
   applyData(await DO.fetchStatus());
+  await pollUsage();
   setTimeout(poll, CFG.poll);
 
-  // 測試／截圖 hook：?shot=cooler|coffee（&dog=id）讓一隻狗站在機器旁並拉近；?shot=closer 只拉近；?card=id 開詳情卡
+  // 測試／截圖 hook：?shot=cooler|coffee（&dog=id）讓一隻狗站在機器旁並拉近；?shot=closer 只拉近；?shot=boss 近拍主管位；?card=id 開詳情卡
   const sh = Q.get('shot');
   if (sh === 'cooler' || sh === 'coffee') {
     startWalk(byId[Q.get('dog')] || byId.lala, sh, CFG, { arrived: true, hold: 1e9 });
     nextWalk = 1e9;
   }
-  if (Q.get('card')) card.open(Q.get('card'));
+  if (Q.get('card') === 'usage') card.openInfo(usageCardHtml(board.view));
+  else if (Q.get('card')) card.open(Q.get('card'));
 
   renderer.shadowMap.needsUpdate = true;
   last = performance.now();
