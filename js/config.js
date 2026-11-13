@@ -1,29 +1,42 @@
-// 版面與 14 隻狗的座位設定
+// 3D 版面（世界座標：x 向右、y 向上、z 朝相機；單位約 1 = 狗身高的 0.45 倍）與 14 隻狗的座位
 (function () {
   const DO = (window.DO = window.DO || {});
+  DO.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const CFG = (DO.CFG = {
-    W: 1024, H: 768,
-    rowY: { A: 268, B: 606 },   // 座位（脖子）基準 y
-    pitch: 138, cx: 512,
-    labelW: 112, labelH: 66,
-    labelGap: 98,               // 標籤底部到座位基準的距離（在耳朵上方）
     poll: 4000,
-    cooler: { x: 330, y: 436 }, // 飲水機底部位置
-    coffee: { x: 694, y: 436 }, // 咖啡機底部位置
+    room: { x0: -14, x1: 14, z0: -9.5, z1: 10.5, h: 6 },  // 地板範圍與牆高
+    dogH: 2.3,                                           // 立繪在場景中的高度
+    pitch: 4.2,                                          // 同排座位間距
+    rowZ: { A: -4.6, B: 0.9, C: 6.4 },                   // 狗站的位置；桌子在狗後方（-z）
+    deskBack: 1.25,                                      // 桌子中心在狗後方多遠
+    aisle: 1.75,                                         // 狗前方走道（座位間縫隙）離座位多遠
+    cooler: { x: -13.25, z: -2.85, stand: { x: -11.9, z: -2.85 } }, // 飲水機（左牆）與狗停的位置
+    coffee: { x: 13.1, z: 2.65, stand: { x: 11.5, z: 2.65 } },      // 咖啡機（右牆）與狗停的位置
   });
 
-  // row A（後排）左到右、row B（前排）左到右
-  const A = ['shiba', 'apo', 'maomao', 'nana', 'director', 'xuebo', 'keke'];
-  const B = ['butler', 'bibi', 'lady', 'lala', 'xiaoha', 'jinjin', 'mumu'];
+  // A 排最後面、B 排中間（錯開半格）、C 排最前面；每排由左到右
+  const ROWS = {
+    A: ['shiba', 'apo', 'maomao', 'nana', 'director'],
+    B: ['xuebo', 'keke', 'butler', 'bibi'],
+    C: ['lady', 'lala', 'xiaoha', 'jinjin', 'mumu'],
+  };
 
   DO.SEATS = {};
   DO.ORDER = [];
-  [['A', A], ['B', B]].forEach(([row, ids]) => {
+  Object.keys(ROWS).forEach((row) => {
+    const ids = ROWS[row];
     ids.forEach((id, i) => {
-      DO.SEATS[id] = { id, row, idx: i, x: CFG.cx + (i - 3) * CFG.pitch, y: CFG.rowY[row] };
+      DO.SEATS[id] = { id, row, idx: i, x: (i - (ids.length - 1) / 2) * CFG.pitch, z: CFG.rowZ[row] };
       DO.ORDER.push(id);
     });
   });
+
+  // 每隻狗的代表色（椅墊、馬克杯、桌墊），取自頭像配件
+  DO.ACCENT = {
+    nana: '#8e6bd1', apo: '#4a5a70', maomao: '#d9534f', butler: '#e08a4a', shiba: '#2f4a8a',
+    bibi: '#c8443c', lady: '#7fc4e8', lala: '#f2c14e', xiaoha: '#d64545', keke: '#5aa469',
+    director: '#3f6b4f', jinjin: '#e8c36a', mumu: '#2c3e6b', xuebo: '#9fd0e6',
+  };
 
   // 內建名稱／職務（status.json 沒給時使用）
   DO.META = {
