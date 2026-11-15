@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-15T10:56:49+08:00",
+  "updatedAt": "2026-11-15T10:56:58+08:00",
   "officeName": "狗狗虛擬辦公室",
   "bots": [
     {
@@ -9,9 +9,9 @@
       "role": "AI 學習",
       "status": "working",
       "task": "接上狗狗辦公室即時狀態",
-      "progress": 60,
+      "progress": 65,
       "message": "正在把 status.json 接到各 Bot",
-      "updatedAt": "2026-11-15T10:56:49+08:00"
+      "updatedAt": "2026-11-15T10:56:58+08:00"
     },
     {
       "id": "apo",
