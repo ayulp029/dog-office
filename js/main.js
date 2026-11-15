@@ -32,14 +32,20 @@ scene.background = new THREE.Color('#c4e2f4');
 const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 140);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.09;
-controls.rotateSpeed = 0.55; controls.zoomSpeed = 0.9; controls.panSpeed = 0.7;
+controls.rotateSpeed = 0.55; controls.zoomSpeed = 0.9; controls.panSpeed = 1;   // 平移 1:1，雙指邊捏邊移時畫面才會跟著手指
 controls.screenSpacePanning = false;          // 平移時沿著地板
 controls.minDistance = 8; controls.maxDistance = 48;
 controls.minPolarAngle = 0.18; controls.maxPolarAngle = 1.4;      // 不會轉到地板下面
 controls.minAzimuthAngle = -1.35; controls.maxAzimuthAngle = 1.35; // 不會繞到後牆背面
-controls.addEventListener('change', () => {   // 目標點不離開房間，避免平移到外太空
-  const t = controls.target;
-  t.x = DO.clamp(t.x, R.x0 + 3, R.x1 - 3); t.z = DO.clamp(t.z, R.z0 + 2, R.z1 - 2); t.y = DO.clamp(t.y, 0.5, 2.5);
+// 縮放對準游標／雙指中點：相機沿著那條視線前後移動，所以手指底下的東西會留在手指底下
+controls.zoomToCursor = true;
+controls.zoomTiltLimit = 0.1;                 // 低角度（仰角 10° 以上）也照樣對準，見 lib/OrbitControls.js 的註記
+// 目標點不離開房間，避免平移到外太空。越界時把「目標點和相機」一起平移回來（視角與距離不變）；
+// 只夾目標點的話相機會繞著轉，還會把對準游標的縮放拉回中心
+controls.addEventListener('change', () => {
+  const t = controls.target, p = camera.position;
+  const dx = DO.clamp(t.x, R.x0 + 1.5, R.x1 - 1.5) - t.x, dz = DO.clamp(t.z, R.z0 + 1, R.z1 - 1.5) - t.z, dy = DO.clamp(t.y, 0.5, 2.5) - t.y;
+  if (dx || dy || dz) { t.x += dx; t.y += dy; t.z += dz; p.x += dx; p.y += dy; p.z += dz; }
 });
 
 const room = buildRoom(scene, CFG);
@@ -87,7 +93,7 @@ function applyData(res) {
     if (d.status !== 'working' || d.offline) d.shown = 0;
     else if (!loaded || d.progress < d.shown - 30) d.shown = d.progress;
     const s = screens[d.id], st = d.offline ? 'off' : d.status;
-    s.emissiveIntensity = st === 'working' ? 0.95 : st === 'idle' ? 0.3 : 0;
+    s.emissiveIntensity = st === 'working' ? 0.95 : st === 'waiting' ? 0.6 : st === 'idle' ? 0.3 : 0;
   });
   const u = data.updatedAt ? new Date(data.updatedAt) : null;
   $('clock-upd').textContent = u && !isNaN(u) ? '更新 ' + new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(u) : '';

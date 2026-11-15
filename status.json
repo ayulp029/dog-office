@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-15T10:56:49+08:00",
+  "officeName": "狗狗虛擬辦公室",
+  "bots": [
+    {
+      "id": "nana",
+      "name": "納納博士",
+      "role": "AI 學習",
+      "status": "working",
+      "task": "接上狗狗辦公室即時狀態",
+      "progress": 60,
+      "message": "正在把 status.json 接到各 Bot",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "apo",
+      "name": "阿波",
+      "role": "程式開發",
+      "status": "waiting",
+      "task": "等塔防遊戲試玩",
+      "progress": 0,
+      "message": "",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "maomao",
+      "name": "毛毛",
+      "role": "美術企劃",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "butler",
+      "name": "狗管家",
+      "role": "私人助理",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:48+08:00"
+    },
+    {
+      "id": "shiba",
+      "name": "郵差柴柴",
+      "role": "Email 管理",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:48+08:00"
+    },
+    {
+      "id": "bibi",
+      "name": "比比",
+      "role": "英文學習",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:48+08:00"
+    },
+    {
+      "id": "lady",
+      "name": "蕾蒂",
+      "role": "心靈陪伴",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:48+08:00"
+    },
+    {
+      "id": "lala",
+      "name": "拉拉",
+      "role": "電腦整理",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "xiaoha",
+      "name": "小哈",
+      "role": "健康運動",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "keke",
+      "name": "柯柯",
+      "role": "旅遊規劃",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "director",
+      "name": "腸導",
+      "role": "AI 影片製作",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "jinjin",
+      "name": "金金",
+      "role": "財務規劃",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "mumu",
+      "name": "牧牧",
+      "role": "投資建議",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    },
+    {
+      "id": "xuebo",
+      "name": "雪博",
+      "role": "半導體研究",
+      "status": "idle",
+      "task": "",
+      "progress": 0,
+      "message": "待命中，隨時可以開工",
+      "updatedAt": "2026-11-15T10:56:49+08:00"
+    }
+  ]
+}

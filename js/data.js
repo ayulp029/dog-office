@@ -1,22 +1,30 @@
 // 資料層：輪詢 status.json、驗證、失敗時改用內建後備模擬器
 (function () {
   const DO = window.DO;
-  const STATUSES = ['working', 'idle', 'resting'];
+  const STATUSES = ['working', 'idle', 'resting', 'waiting'];
+  DO.STALE_MS = 30 * 60 * 1000;   // 超過 30 分鐘沒更新的那一筆，畫面上當作待命
+  const ts = (v) => (typeof v === 'string' ? Date.parse(v) : NaN);
 
-  // 驗證並正規化；格式壞掉回傳 null
-  DO.normalize = function (raw) {
+  // 驗證並正規化；格式壞掉回傳 null。now 可指定（測試用），預設現在
+  DO.normalize = function (raw, now) {
     if (!raw || typeof raw !== 'object' || !Array.isArray(raw.bots)) return null;
-    const map = {};
+    const map = {}, top = ts(raw.updatedAt);
+    now = now || Date.now();
     raw.bots.forEach((b) => {
       if (!b || typeof b.id !== 'string' || !DO.META[b.id]) return; // 未知 id 忽略
-      const st = STATUSES.includes(b.status) ? b.status : 'idle';
+      // 過期判斷：先看這一筆自己的 updatedAt，沒有就用頂層的，再沒有就視為過期
+      const own = ts(b.updatedAt), at = isNaN(own) ? top : own;
+      const stale = isNaN(at) || now - at > DO.STALE_MS;
+      const st = stale ? 'idle' : STATUSES.includes(b.status) ? b.status : 'idle';
+      const busy = st === 'working' || st === 'waiting';   // 這兩種才顯示任務
       map[b.id] = {
         id: b.id, status: st,
         name: typeof b.name === 'string' && b.name ? b.name : DO.META[b.id][0],
         role: typeof b.role === 'string' && b.role ? b.role : DO.META[b.id][1],
-        task: st === 'working' ? (typeof b.task === 'string' && b.task ? b.task : '工作中') : '',
+        task: busy ? (typeof b.task === 'string' && b.task ? b.task : st === 'working' ? '工作中' : '等待中') : '',
         progress: st === 'working' ? DO.clamp(Math.round(Number(b.progress) || 0), 0, 100) : 0,
-        message: typeof b.message === 'string' ? b.message : '',
+        message: stale ? '超過 30 分鐘沒有更新，先當作待命' : typeof b.message === 'string' ? b.message : '',
+        stale, updatedAt: isNaN(at) ? null : at,
       };
     });
     return { updatedAt: raw.updatedAt, officeName: raw.officeName, bots: map };

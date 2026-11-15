@@ -4,7 +4,7 @@ import { canvasTex } from './kit.js';
 
 const PLANE = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0);   // 原點在腳底
 const BLOB = new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2);
-let blobMat = null, zTex = null;
+let blobMat = null, zTex = null, waitTex = null;
 
 // 載入立繪並縮到最高 768px（省 GPU 記憶體，iPad 比較順）；保留 canvas 供點擊時查透明度
 export function loadDogArt(id) {
@@ -53,7 +53,7 @@ export class Dog {
     this.blob = new THREE.Mesh(BLOB, blobMat);
     this.blob.scale.set(this.W * 0.5, 1, 0.42); this.blob.renderOrder = 1;
     scene.add(this.blob);
-    this.zzz = null; this.scene = scene;
+    this.zzz = null; this.dots = null; this.scene = scene;
   }
 
   apply(b) {
@@ -72,6 +72,7 @@ export class Dog {
     else if (this.offline) { k = 0.9; }
     else if (this.status === 'working') { sy = 1 + 0.018 * Math.sin(p * 3.2); y = 0.035 * Math.max(0, Math.sin(p * 3.2)); }
     else if (this.status === 'idle') { rz = 0.055 * Math.sin(p * 1.5); }
+    else if (this.status === 'waiting') { rz = 0.03 * Math.sin(p * 0.8); y = 0.07 * Math.pow(Math.max(0, Math.sin(p * 0.9)), 6); }   // 等待：慢慢晃、偶爾踮一下腳張望
     else { k = 0.82; sy = 1 + 0.03 * Math.sin(p * 1.2); rz = 0.1; }   // 休息：縮低、慢慢呼吸、歪頭
     this.k += (k - this.k) * Math.min(1, dt * 4);
     const m = this.mesh, h = this.H * this.k * sy;
@@ -86,6 +87,17 @@ export class Dog {
 
     const rest = this.status === 'resting' && !this.offline && this.mode !== 'walking';
     if (rest && !this.zzz) this.makeZzz();
+    // 等待中：頭旁邊一顆「…」泡泡，跟休息的 Zzz、工作的進度條都不一樣
+    const wait = this.status === 'waiting' && !this.offline && this.mode !== 'walking';
+    if (wait && !this.dots) this.makeDots();
+    if (this.dots) {
+      this.dots.visible = wait;
+      if (wait) {
+        const off = this.W * 0.5 + 0.42, q = Math.sin(p * 2.2);
+        this.dots.position.set(this.anchor.x + ca * off, this.anchor.y - 0.3 + 0.05 * q, this.anchor.z - sa * off);
+        this.dots.scale.set(0.78 + 0.04 * q, 0.52 + 0.027 * q, 1);
+      }
+    }
     if (this.zzz) {
       this.zzz.forEach((s, i) => {
         s.visible = rest;
@@ -110,6 +122,21 @@ export class Dog {
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTex, transparent: true, depthWrite: false, toneMapped: false }));
       s.renderOrder = 3; this.scene.add(s); return s;
     });
+  }
+
+  makeDots() {
+    if (!waitTex) {
+      waitTex = canvasTex(96, 64, (c) => {
+        c.fillStyle = '#ffffff'; c.strokeStyle = '#c9971c'; c.lineWidth = 4;
+        c.beginPath(); c.ellipse(48, 28, 42, 22, 0, 0, 7); c.fill(); c.stroke();
+        c.beginPath(); c.moveTo(20, 44); c.lineTo(10, 60); c.lineTo(34, 48); c.closePath(); c.fill(); c.stroke();
+        c.beginPath(); c.ellipse(48, 28, 39, 19, 0, 0, 7); c.fill();
+        c.fillStyle = '#c9971c';
+        [28, 48, 68].forEach((x) => { c.beginPath(); c.arc(x, 28, 6, 0, 7); c.fill(); });
+      });
+    }
+    this.dots = new THREE.Sprite(new THREE.SpriteMaterial({ map: waitTex, transparent: true, depthWrite: false, toneMapped: false }));
+    this.dots.renderOrder = 3; this.scene.add(this.dots);
   }
 
   // 點擊位置（平面 uv）是不是真的點在狗身上

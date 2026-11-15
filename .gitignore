@@ -1,6 +1,6 @@
 screenshots/
 tests/
+tools/
 simulator.py
-status.json
 CLAUDE.md
 STATUS.md

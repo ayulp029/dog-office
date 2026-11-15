@@ -1,5 +1,5 @@
 // 詳情卡：點狗（滑鼠或觸控）開啟，點空白或 × 關閉。左邊放真實頭像 assets/avatars/<id>.png
-const STXT = { working: '工作中', idle: '待命', resting: '休息中', off: '離線' };
+const STXT = { working: '工作中', waiting: '等待中', idle: '待命', resting: '休息中', off: '離線' };
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export class Card {
@@ -22,9 +22,10 @@ export class Card {
     const key = [d.id, st, d.name, d.role, d.task, d.message].join('|');
     if (key !== this.key) {
       this.key = key;
-      const msg = d.message || (st === 'off' ? '目前沒有收到狀態' : st === 'resting' ? '休息一下，馬上回來' : st === 'idle' ? '待命中，隨時可以開工' : '專心工作中');
+      const msg = d.message || (st === 'off' ? '目前沒有收到狀態' : st === 'resting' ? '休息一下，馬上回來' : st === 'idle' ? '待命中，隨時可以開工' : st === 'waiting' ? '等對方回覆，暫時沒辦法往下做' : '專心工作中');
       const task = st === 'working'
         ? `<div class="c-row">任務：${esc(d.task)}</div><div class="c-bar"><div class="c-fill"></div><div class="c-pc"></div></div>`
+        : st === 'waiting' ? `<div class="c-row">等待：${esc(d.task)}</div>`
         : '<div class="c-row">目前沒有進行中的任務</div>';
       this.body.innerHTML = `<img class="c-av" src="assets/avatars/${d.id}.png" alt="${esc(d.name)}的頭像" width="84" height="84">
         <div class="c-main"><div class="c-head"><span class="c-name">${esc(d.name)}</span><span class="c-role">${esc(d.role)}</span>

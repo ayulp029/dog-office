@@ -1,6 +1,7 @@
-// 頭上標籤（DOM）：名字、職務、任務、進度條。位置由 main.js 把 3D 頭頂座標投影到螢幕後傳入。
+// 頭上標籤（DOM）：名字、職務、任務、進度條（等待中改顯示「等待中」小牌，沒有進度條）。位置由 main.js 把 3D 頭頂座標投影到螢幕後傳入。
 const LW = 112;
-const TXT = { working: '', idle: '待命', resting: '休息中', off: '離線' };
+const TXT = { idle: '待命', resting: '休息中', off: '離線' };
+const CLS = { working: '', waiting: ' wait', resting: ' rest', idle: ' idle', off: ' off' };
 
 export class Labels {
   constructor(host, dogs) {
@@ -8,7 +9,7 @@ export class Labels {
     dogs.forEach((d) => {
       const e = document.createElement('div');
       e.className = 'label';
-      e.innerHTML = '<div class="nm"></div><div class="rl"></div><div class="tk"></div><div class="bar"><div class="fill"></div><div class="pc"></div></div>';
+      e.innerHTML = '<div class="nm"></div><div class="rl"></div><div class="tk"></div><div class="bar"><div class="fill"></div><div class="pc"></div></div><div class="wt">等待中…</div>';
       host.appendChild(e);
       this.els[d.id] = { e, nm: e.children[0], rl: e.children[1], tk: e.children[2], bar: e.children[3], fill: e.children[3].children[0], pc: e.children[3].children[1], last: '', vis: true, pcv: -1 };
     });
@@ -25,8 +26,8 @@ export class Labels {
       if (key !== o.last) {
         o.last = key;
         o.nm.textContent = d.name; o.rl.textContent = d.role;
-        o.tk.textContent = st === 'working' ? d.task : TXT[st];
-        o.e.className = 'label' + (st === 'working' ? '' : ' ' + (st === 'resting' ? 'rest' : st)) + (this.sel === d.id ? ' sel' : '');
+        o.tk.textContent = st === 'working' || st === 'waiting' ? d.task : TXT[st];
+        o.e.className = 'label' + CLS[st] + (this.sel === d.id ? ' sel' : '');
         o.bar.style.display = st === 'working' ? '' : 'none';
       }
       if (st === 'working') {
@@ -35,7 +36,7 @@ export class Labels {
       }
       if (p.vis !== o.vis) { o.vis = p.vis; o.e.style.display = p.vis ? '' : 'none'; }
       if (!p.vis) continue;
-      const h = (st === 'working' ? 68 : 52) * p.s, w = LW * p.s;
+      const h = (st === 'working' || st === 'waiting' ? 68 : 52) * p.s, w = LW * p.s;
       o.e.style.transform = 'translate(' + (p.x - LW / 2).toFixed(1) + 'px,' + (p.y - 7 * p.s).toFixed(1) + 'px) translateY(-100%) scale(' + p.s.toFixed(3) + ')';
       o.e.style.zIndex = this.sel === d.id ? 9999 : 1000 - Math.round(p.depth * 10);
       this.boxes.push({ id: d.id, x: p.x - w / 2, y: p.y - 7 * p.s - h, w, h, depth: p.depth });
