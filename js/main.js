@@ -1,10 +1,13 @@
-// 主程式：Three.js 場景、相機與 OrbitControls、渲染迴圈、輪詢 status.json、點擊、走路排程
+// 主程式：Three.js 場景、相機與 OrbitControls、渲染迴圈、輪詢 status.json，並接上互動（interact.js）、閒逛（roam.js）、特效（fx.js）
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import { buildRoom } from './room.js';
 import { buildFurniture } from './furniture.js';
 import { Dog, loadDogArt } from './dogs.js';
-import { startWalk, updateWalk } from './walker.js';
+import { buildRoam } from './roam.js';
+import { buildInteract } from './interact.js';
+import { Fx } from './fx.js';
+import { Sound } from './sound.js';
 import { Labels } from './labels.js';
 import { Card } from './card.js';
 import { buildUsageBoard, usageCardHtml } from './boss.js';
@@ -55,7 +58,7 @@ const ring = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.12, 40).rotateX(-Math
   new THREE.MeshBasicMaterial({ color: 0xffc94d, transparent: true, opacity: 0.95, depthWrite: false }));
 ring.visible = false; ring.renderOrder = 2; scene.add(ring);
 
-let dogs = [], byId = {}, labels, card, loaded = false, nextWalk = 6, last = 0, fpsAcc = 0, fpsN = 0, clockAt = -1;
+let dogs = [], byId = {}, labels, card, roam, fx, loaded = false, last = 0, fpsAcc = 0, fpsN = 0, clockAt = -1;
 const t0 = performance.now(), pts = {}, v3 = new THREE.Vector3(), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 
 // 視角：az 方位角、polar 仰角（0 = 正上方）、dist 距離
@@ -126,30 +129,6 @@ function pick(x, y) {
   for (const h of hits) if (h.uv && h.object.userData.dog.opaqueAt(h.uv)) return h.object.userData.dog;
   return null;
 }
-function bindTap() {
-  let down = null;
-  canvas.addEventListener('pointerdown', (e) => { down = e.isPrimary ? { x: e.clientX, y: e.clientY, t: performance.now() } : null; });
-  canvas.addEventListener('pointerup', (e) => {
-    if (!down || !e.isPrimary) return;
-    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t;
-    down = null;
-    if (moved > 8 || dt > 700) return;        // 那是拖曳旋轉，不是點擊
-    const d = pick(e.clientX, e.clientY);
-    if (d) card.toggle(d.id);
-    else if (hitBoard(e.clientX, e.clientY) && !card.info) card.openInfo(usageCardHtml(board.view));
-    else card.close();
-  });
-  canvas.addEventListener('pointercancel', () => { down = null; });
-}
-
-function scheduleWalk(t) {
-  if (t < nextWalk || dogs.some((d) => d.mode === 'walking')) return;
-  const c = dogs.filter((d) => d.status === 'working' && !d.offline);
-  if (c.length < 4) { nextWalk = t + 5; return; }
-  startWalk(c[Math.floor(Math.random() * c.length)], Math.random() < 0.5 ? 'cooler' : 'coffee', CFG);
-  nextWalk = t + 16 + Math.random() * 10;
-}
-
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
@@ -159,11 +138,10 @@ function frame(now) {
   const az = controls.getAzimuthalAngle(), elev = Math.PI / 2 - controls.getPolarAngle();
   const tilt = DO.clamp(elev * 0.55, 0, 0.6);  // 略微後仰面向相機：俯視時不會被壓扁，也不會倒進後面的桌子
   const w = window.innerWidth, h = window.innerHeight, ui = DO.clamp(Math.min(w, h * 1.5) / 1150, 0.62, 1);
-  scheduleWalk(t);
+  roam.update(dt);                              // 先決定每隻狗這一幀的位置（閒逛／回座位／玩耍）
   for (let i = 0; i < dogs.length; i++) {
     const d = dogs[i];
     if (d.status === 'working') d.shown += (d.progress - d.shown) * Math.min(1, dt * 3);
-    if (d.mode === 'walking') updateWalk(d, dt);
     d.update(t, dt, az, tilt);
     const dist = camera.position.distanceTo(d.anchor);
     v3.copy(d.anchor).project(camera);
@@ -171,8 +149,11 @@ function frame(now) {
     p.x = (v3.x * 0.5 + 0.5) * w; p.y = (-v3.y * 0.5 + 0.5) * h; p.depth = dist;
     p.s = DO.clamp(25 / dist, 0.6, 1) * ui;
     p.vis = v3.z < 1 && p.x > -60 && p.x < w + 60 && p.y > -10 && p.y < h + 90;
+    v3.set(d.pos.x, 0, d.pos.z).project(camera);   // 腳底的螢幕座標：特效用它和頭頂推算嘴巴位置
+    p.fx = (v3.x * 0.5 + 0.5) * w; p.fy = (-v3.y * 0.5 + 0.5) * h;
   }
   labels.update(dogs, pts);
+  fx.update(dt);
   card.render();
   if (card.id) { const d = byId[card.id]; ring.position.set(d.pos.x, 0.07, d.pos.z); ring.scale.setScalar(d.W * 0.55); }
   const sec = Math.floor(now / 1000);
@@ -194,21 +175,28 @@ async function start() {
   window.addEventListener('resize', resize); window.addEventListener('orientationchange', resize);
   const arts = await Promise.all(DO.ORDER.map(loadDogArt));
   dogs = DO.ORDER.map((id, i) => new Dog(id, i, arts[i], DO, scene));
-  dogs.forEach((d) => { byId[d.id] = d; pts[d.id] = { x: 0, y: 0, s: 1, vis: false, depth: 0 }; });
+  dogs.forEach((d) => { byId[d.id] = d; pts[d.id] = { x: 0, y: 0, s: 1, vis: false, depth: 0, fx: 0, fy: 0 }; });
   labels = new Labels($('labels'), dogs);
-  card = new Card((id) => byId[id], (id) => { labels.setSelected(id); ring.visible = !!id; });
-  bindTap();
+  fx = new Fx($('fx'), pts);
+  roam = buildRoam(DO, dogs, scene, fx, { eager: Q.get('roam') === '1' });   // ?roam=1：一載入就讓好幾隻待命的狗出門
+  const love = { text: () => '' };
+  card = new Card((id) => byId[id], (id) => { labels.setSelected(id); ring.visible = !!id; }, (id) => love.text(id), DO.taipeiDate);
+  // 點一下：點到狗 → 汪！＋開／關詳情卡；點到儀表板 → 用量卡；點空白 → 關卡片
+  const interact = buildInteract({ canvas, card, fx, byId, pick, onBlank: (x, y) => {
+    if (hitBoard(x, y) && !card.info) card.openInfo(usageCardHtml(board.view)); else card.close();
+  } });
+  love.text = (id) => interact.aff.text(id);
   $('reset-view').addEventListener('click', defaultView);
+  const snd = $('sound-toggle'), showSnd = () => { snd.textContent = Sound.on ? '聲音開' : '靜音'; snd.classList.toggle('muted', !Sound.on); snd.setAttribute('aria-pressed', String(Sound.on)); };
+  snd.addEventListener('click', () => { Sound.set(!Sound.on); showSnd(); });
+  showSnd();
   applyData(await DO.fetchStatus());
   await pollUsage();
   setTimeout(poll, CFG.poll);
 
   // 測試／截圖 hook：?shot=cooler|coffee（&dog=id）讓一隻狗站在機器旁並拉近；?shot=closer 只拉近；?shot=boss 近拍主管位；?card=id 開詳情卡
   const sh = Q.get('shot');
-  if (sh === 'cooler' || sh === 'coffee') {
-    startWalk(byId[Q.get('dog')] || byId.lala, sh, CFG, { arrived: true, hold: 1e9 });
-    nextWalk = 1e9;
-  }
+  if (sh === 'cooler' || sh === 'coffee') roam.hold((byId[Q.get('dog')] || byId.lala).id, CFG[sh].stand.x, CFG[sh].stand.z);
   if (Q.get('card') === 'usage') card.openInfo(usageCardHtml(board.view));
   else if (Q.get('card')) card.open(Q.get('card'));
 
@@ -216,7 +204,9 @@ async function start() {
   last = performance.now();
   frame(last);
   $('loading').hidden = true;
-  DO.app = { scene, camera, controls, renderer, dogs, setView, startWalk: (id, dest) => startWalk(byId[id], dest, CFG) };
+  // 測試 hook：roam（nudge／home／state／stage／speed…）、interact（bark／pet／treat／aff／stats）、fx、card、screenOf(id) 取狗身體中間的螢幕座標
+  DO.app = { scene, camera, controls, renderer, dogs, setView, roam, interact, fx, card, labels, sound: Sound,
+    screenOf: (id) => { const p = pts[id]; return { x: p.x + (p.fx - p.x) * 0.55, y: p.y + (p.fy - p.y) * 0.55, hx: p.x, hy: p.y, vis: p.vis }; } };
   requestAnimationFrame(() => { window.__ready = true; });   // 場景、立繪、第一輪資料都好，且已畫出第一幀
 }
 start().catch((e) => { console.error(e); $('loading').textContent = '載入失敗，請重新整理'; });

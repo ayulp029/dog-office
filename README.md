@@ -24,7 +24,15 @@
 - **線上版一定要加 `--push`**：GitHub Pages 是靜態站，iPad 上的瀏覽器讀不到 box 上的檔案，只讀得到 repo 裡的 `status.json`。`--push` 會把資料檔複製到 `/workspace/claude-work/dog-office-publish/`，只 commit 那個檔並 push 到 `origin main`；之後 Pages 通常要 1–2 分鐘重建，iPad 才會看到。沒加 `--push` 只改本機。
 - **過期規則**：某一隻超過 30 分鐘沒更新（看該筆的 `updatedAt`，沒有就看頂層的），畫面上自動顯示成「待命」。長時間工作請至少每 30 分鐘回報一次。
 - 四種狀態：工作中（任務＋進度條）、等待中（正在等的事＋「等待中…」小牌與「…」泡泡，沒有進度條）、待命、休息中（Zzz）。檔案裡沒列到的狗顯示離線。
-- 完整格式與規則見 box 上的 `/workspace/claude-work/dog-office/STATUS.md`（開發檔，不在這個 repo）。
+- 完整格式與規則見 STATUS.md。
+
+## 互動
+
+- **點**：點一下狗，會汪一聲、冒「汪！」泡泡並打開詳情卡（任務、進度、狀態、最後更新時間、message）；再點同一隻或點空白處收起。拖曳是旋轉視角，不算點。
+- **摸、餵**：詳情卡上按「摸摸頭」冒愛心、按「餵餅乾」丟骨頭給牠吃；每隻的次數存在瀏覽器（localStorage），重新整理還在。
+- **長按**：按住狗約半秒不動，直接摸頭（不會旋轉、也不會開關卡片）。
+- **聲音**：右下「聲音開／靜音」可切換，第一次點畫面後才會出聲。
+- **閒逛**：待命（含超過 30 分鐘沒更新）的狗會離開座位散步、偶爾互玩；一改成工作中或等待中就走回座位；休息中留在座位。網址加 `?roam=1` 可讓好幾隻立刻出門。
 
 ## 執行
 
@@ -32,6 +40,7 @@
 cd dog-office
 python3 -m http.server 8890      # 開 http://localhost:8890/
 python3 tests/shot.py            # 截圖到 screenshots/（需 Python Playwright）
+python3 tests/test_interact.py   # 互動與閒逛的自動測試＋ screenshots/interact.png
 python3 tests/test_live.py       # 即時狀態、對準縮放的自動測試＋ screenshots/live.png
 python3 simulator.py             # 開發用假資料：持續改寫 status.json（會蓋掉真實狀態）
 ```

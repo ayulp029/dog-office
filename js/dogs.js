@@ -35,7 +35,10 @@ export class Dog {
     this.ph = idx * 1.7; this.k = 1; this.h = this.H;
     this.name = DO.META[id][0]; this.role = DO.META[id][1];
     this.status = 'idle'; this.offline = false; this.task = ''; this.progress = 0; this.shown = 0; this.message = '';
-    this.mode = 'seat'; this.walk = null;
+    // 位置由 roam.js／play.js 控制：away = 不在座位上、moving = 正在走（要有走路動畫）、fast = 小跑步、hold = 被叫住先停幾秒
+    this.away = false; this.moving = false; this.fast = false; this.hold = 0;
+    this.updatedAt = null; this.stale = false;
+    this.act = { type: '', t: 0, dur: 1, dir: 0 };   // 一次性的反應動畫（汪、被摸頭、吃餅乾、跳、嗅），重複使用同一個物件
     this.anchor = new THREE.Vector3();
 
     this.mat = new THREE.MeshBasicMaterial({ map: art.tex, transparent: true, alphaTest: 0.08, toneMapped: false });
@@ -60,35 +63,54 @@ export class Dog {
     this.offline = !!b.offline; this.status = b.status;
     this.name = b.name; this.role = b.role;
     this.task = b.task || ''; this.progress = b.progress || 0; this.message = b.message || '';
+    this.updatedAt = b.updatedAt || null; this.stale = !!b.stale;
     this.mat.color.set(this.offline ? 0x8f8f8f : 0xffffff);
     this.mat.opacity = this.offline ? 0.6 : 1;
   }
 
+  // 播一段反應動畫：bark 汪（跳兩下）、pet 被摸頭、eat 吃餅乾、hop 跳一下、sniff 互嗅（dir = 往哪邊靠）
+  react(type, dur, dir) { const a = this.act; a.type = type; a.t = 0; a.dur = dur; a.dir = dir || 0; }
+
   // t 秒、dt 秒、az 相機方位角、tilt 後仰角
   update(t, dt, az, tilt) {
-    let sy = 1, y = 0, rz = 0, k = 1;
-    const p = t + this.ph;
-    if (this.mode === 'walking' && this.walk.phase !== 'wait') { y = Math.abs(Math.sin(t * 9)) * 0.16; rz = Math.sin(t * 9) * 0.06; }
+    let sy = 1, sx = 1, y = 0, rz = 0, k = 1;
+    const p = t + this.ph, a = this.act;
+    if (this.moving) { const f = this.fast ? 14 : 9.5; y = Math.abs(Math.sin(p * f)) * (this.fast ? 0.24 : 0.16); rz = Math.sin(p * f) * 0.07; }
     else if (this.offline) { k = 0.9; }
+    else if (this.away) { rz = 0.05 * Math.sin(p * 1.8); }
     else if (this.status === 'working') { sy = 1 + 0.018 * Math.sin(p * 3.2); y = 0.035 * Math.max(0, Math.sin(p * 3.2)); }
     else if (this.status === 'idle') { rz = 0.055 * Math.sin(p * 1.5); }
     else if (this.status === 'waiting') { rz = 0.03 * Math.sin(p * 0.8); y = 0.07 * Math.pow(Math.max(0, Math.sin(p * 0.9)), 6); }   // 等待：慢慢晃、偶爾踮一下腳張望
     else { k = 0.82; sy = 1 + 0.03 * Math.sin(p * 1.2); rz = 0.1; }   // 休息：縮低、慢慢呼吸、歪頭
+    if (a.type) {
+      a.t += dt;
+      const u = a.t / a.dur, S = Math.sin, PI = Math.PI;
+      if (u >= 1) a.type = '';
+      else if (a.type === 'bark') { y += 0.4 * Math.abs(S(2 * PI * u)) * (1 - 0.45 * u); rz += 0.08 * S(4 * PI * u); sy *= 1 + 0.06 * S(2 * PI * u); }
+      else if (a.type === 'pet') {
+        if (u < 0.35) { const q = S(PI * u / 0.35); sy *= 1 - 0.1 * q; sx *= 1 + 0.04 * q; }            // 頭先低下去
+        else { const q = u - 0.35; rz += 0.12 * S(q * 22) * (1 - u); y += 0.1 * Math.abs(S(q * 11)); }  // 抬起來開心晃
+      } else if (a.type === 'eat') {
+        const q = Math.abs(S(u * 9 * PI)); sy *= 1 - 0.05 * q; sx *= 1 + 0.035 * q;                       // 嚼嚼嚼
+        if (u > 0.78) y += 0.3 * S(PI * (u - 0.78) / 0.22);
+      } else if (a.type === 'hop') { y += 0.5 * S(PI * u); }
+      else if (a.type === 'sniff') { rz += a.dir * (0.1 + 0.05 * S(a.t * 9)) * S(PI * Math.min(1, u * 5, (1 - u) * 5) / 2); y += 0.03 * Math.abs(S(a.t * 9)); }
+    }
     this.k += (k - this.k) * Math.min(1, dt * 4);
     const m = this.mesh, h = this.H * this.k * sy;
     m.position.set(this.pos.x, y + 0.05, this.pos.z);
     m.rotation.set(-tilt, az, rz);
-    m.scale.set(this.W * this.k, h, 1);
+    m.scale.set(this.W * this.k * sx, h, 1);
     this.blob.position.set(this.pos.x, 0.06, this.pos.z);
     this.h = h;
     // 頭頂錨點（給標籤用）：平面的上方向 = Ry·Rx·(0,1,0)
     const st = Math.sin(tilt), ct = Math.cos(tilt), sa = Math.sin(az), ca = Math.cos(az);
     this.anchor.set(this.pos.x - st * sa * h, y + ct * h + 0.12, this.pos.z - st * ca * h);
 
-    const rest = this.status === 'resting' && !this.offline && this.mode !== 'walking';
+    const rest = this.status === 'resting' && !this.offline && !this.away;
     if (rest && !this.zzz) this.makeZzz();
     // 等待中：頭旁邊一顆「…」泡泡，跟休息的 Zzz、工作的進度條都不一樣
-    const wait = this.status === 'waiting' && !this.offline && this.mode !== 'walking';
+    const wait = this.status === 'waiting' && !this.offline && !this.away;
     if (wait && !this.dots) this.makeDots();
     if (this.dots) {
       this.dots.visible = wait;

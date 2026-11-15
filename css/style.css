@@ -34,7 +34,7 @@ html, body { margin: 0; height: 100%; background: #c4e2f4; overflow: hidden; ove
 #hud { position: fixed; left: 0; top: 0; right: 0; display: flex; justify-content: space-between; gap: 8px;
   padding: calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left));
   pointer-events: none; z-index: 10010; }
-#title, #clock, #demo-note, #hint, #reset-view { background: rgba(58, 40, 28, 0.8); color: #fff8ec; border-radius: 12px; }
+#title, #clock, #demo-note, #hint, #reset-view, #sound-toggle { background: rgba(58, 40, 28, 0.8); color: #fff8ec; border-radius: 12px; }
 #title, #clock { padding: 4px 12px; font-size: 14px; font-weight: 700; white-space: nowrap; }
 #clock { font-weight: 500; }
 #clock-time { font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -44,7 +44,9 @@ html, body { margin: 0; height: 100%; background: #c4e2f4; overflow: hidden; ove
 #demo-note, #hint { font-size: 11px; padding: 3px 9px; }
 #demo-note[hidden] { display: none; }
 #hint { opacity: 0.85; }
-#reset-view { margin-left: auto; pointer-events: auto; border: 0; font: inherit; font-size: 12px; font-weight: 700; padding: 6px 12px; cursor: pointer; }
+#reset-view, #sound-toggle { pointer-events: auto; border: 0; font: inherit; font-size: 12px; font-weight: 700; padding: 8px 12px; min-height: 34px; cursor: pointer; touch-action: manipulation; }
+#sound-toggle { margin-left: auto; }
+#sound-toggle.muted { background: rgba(90, 90, 90, 0.8); color: #ddd; }
 #debug { position: fixed; right: 8px; top: 44px; font: 11px monospace; color: #fff; background: rgba(0,0,0,.6); padding: 3px 6px; z-index: 10011; }
 #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #c4e2f4;
   color: #3a281c; font-size: 18px; font-weight: 700; z-index: 10020; }
@@ -69,4 +71,22 @@ html, body { margin: 0; height: 100%; background: #c4e2f4; overflow: hidden; ove
 #card .c-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #ffb347, #ff8a3d); border-radius: 7px; }
 #card .c-pc { position: absolute; inset: 0; text-align: center; font-size: 11px; font-weight: 700; line-height: 14px; color: #3a281c; }
 #card .c-msg { margin-top: 6px; font-size: 13px; padding: 5px 8px; background: #fdebc8; border-radius: 8px; }
-@media (max-width: 520px) { #hint { display: none; } #card .c-av { width: 64px; height: 64px; } }
+#card .c-upd { font-size: 12px; color: #8a6a4a; }
+/* 親密度與「摸摸頭」「餵餅乾」：按鈕至少 44px 高，手指好按 */
+#card-act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px -32px 0 0; padding-top: 10px; border-top: 1px dashed #e9c98c; }
+#card-act[hidden] { display: none; }
+#card-love { flex: 1 1 150px; font-size: 14px; font-weight: 700; color: #b0563a; white-space: nowrap; }
+#card-act button { flex: 0 0 auto; min-width: 108px; min-height: 46px; padding: 0 18px; border: 0; border-radius: 23px; font: inherit; font-size: 16px; font-weight: 700;
+  color: #fff; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; box-shadow: 0 3px 0 rgba(90, 50, 20, 0.35); }
+#card-act button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(90, 50, 20, 0.35); }
+#btn-pet { background: #ee7f8f; } #btn-treat { background: #d9933f; }
+
+/* 互動特效層：疊在標籤上、卡片下，不吃事件；元素由 fx.js 重複使用 */
+#fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 10005; }
+.fx { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.fx-woof { padding: 3px 11px 4px; border-radius: 16px 16px 16px 4px; background: #fff; border: 2.5px solid #3a281c; color: #3a281c;
+  font-size: 20px; font-weight: 800; white-space: nowrap; box-shadow: 0 2px 5px rgba(40, 20, 0, 0.3); }
+.fx-heart { width: 26px; height: 24px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 22.5C6 17 1.5 12.6 1.5 7.6 1.5 4.2 4.1 1.5 7.4 1.5c2.2 0 4.3 1.2 5.6 3.1 1.3-1.9 3.4-3.1 5.6-3.1 3.3 0 5.9 2.7 5.9 6.1 0 5-4.5 9.4-11.5 14.9z' fill='%23ff5d7a' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E") center / contain no-repeat; }
+.fx-crumb { width: 7px; height: 6px; border-radius: 2px; background: #c98a45; border: 1px solid #8a5a2a; }
+.fx-bone { width: 46px; height: 22px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 22'%3E%3Cg fill='%23f0c98a' stroke='%238a5a2a' stroke-width='1.6'%3E%3Cpath d='M11 7.5h24a4.6 4.6 0 1 1 6.2 3.5 4.6 4.6 0 1 1-6.2 3.5H11a4.6 4.6 0 1 1-6.2-3.5A4.6 4.6 0 1 1 11 7.5z'/%3E%3C/g%3E%3Cg fill='%238a5a2a'%3E%3Ccircle cx='17' cy='11' r='1'/%3E%3Ccircle cx='23' cy='11' r='1'/%3E%3Ccircle cx='29' cy='11' r='1'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat; filter: drop-shadow(0 2px 2px rgba(40, 20, 0, 0.35)); }
+@media (max-width: 520px) { #card-act { margin-right: -32px; } #card-act button { flex: 1 1 0; min-width: 0; } #hint { display: none; } #card .c-av { width: 64px; height: 64px; } }

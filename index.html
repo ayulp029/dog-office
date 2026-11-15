@@ -14,13 +14,15 @@
 <body>
 <canvas id="scene"></canvas>
 <div id="labels"></div>
+<div id="fx"></div>
 <div id="hud">
   <div id="title">🐾 <span id="office-name">狗狗虛擬辦公室</span></div>
   <div id="clock"><span id="clock-time">--:--</span><span id="clock-upd"></span></div>
 </div>
 <div id="foot">
   <div id="demo-note" hidden>目前用示範資料</div>
-  <div id="hint">拖曳旋轉・滾輪或雙指縮放・點狗狗看詳情</div>
+  <div id="hint">拖曳旋轉・滾輪或雙指縮放・點狗狗會汪並開詳情・長按摸摸頭</div>
+  <button id="sound-toggle" type="button" aria-label="音效開關">聲音開</button>
   <button id="reset-view" type="button">重設視角</button>
 </div>
 <div id="debug" hidden></div>
@@ -28,6 +30,11 @@
 <aside id="card" hidden role="dialog" aria-live="polite">
   <button id="card-close" aria-label="關閉">×</button>
   <div id="card-body"></div>
+  <div id="card-act" hidden>
+    <div id="card-love">摸頭 0 次・餅乾 0 塊</div>
+    <button id="btn-pet" type="button" data-act="pet">摸摸頭</button>
+    <button id="btn-treat" type="button" data-act="treat">餵餅乾</button>
+  </div>
 </aside>
 <script src="js/config.js"></script>
 <script src="js/data.js"></script>
