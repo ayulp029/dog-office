@@ -1,7 +1,7 @@
 // 兩隻待命的狗玩一小段：sniff 互嗅、chase 互相追跑一圈半、ball 小球丟來丟去。
 // 固定幾個「場次」重複使用（球與球影也是），玩完就隱藏，渲染迴圈裡不 new 物件。
 import * as THREE from 'three';
-import { ball as kitBall, mat } from './kit.js';
+import { ball as kitBall, mat } from './kit.js?v=20261115c';
 
 const SLOTS = 3, SNIFF = 3.4, CHASE = 3.3, TOSS = 0.8, GAP = 0.3, TOSSES = 5;
 

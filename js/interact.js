@@ -1,9 +1,10 @@
 // 互動：點一下狗（汪！＋詳情卡）、長按摸摸頭、詳情卡上的「摸摸頭」「餵餅乾」，以及每隻狗的親密度計數（localStorage）。
-// 點擊判斷沿用原本的規則：短觸（< 700ms）而且幾乎沒移動（≤ 8px）才是點一下，其餘是拖曳旋轉。
-import { Sound } from './sound.js';
+// 點擊判斷沿用原本的規則：短觸（< 700ms）而且幾乎沒移動（滑鼠 ≤ 8px、觸控／筆 ≤ 28px）才是點一下，其餘是拖曳旋轉。
+import { Sound } from './sound.js?v=20261115c';
 
 const KEY = 'dog-office-affection';   // { "<id>": { "pet": 次數, "treat": 塊數 } }
-const MOVE = 8, TAP_MS = 700, LONG_MS = 550;
+const MOVE_MOUSE = 8, MOVE_TOUCH = 28, TAP_MS = 700, LONG_MS = 550;   // 手指輕點常抖超過 8px，touch／pen 放寬到 28px
+const moveLimit = (t) => (t === 'mouse' ? MOVE_MOUSE : MOVE_TOUCH);
 
 // 被摸次數與餅乾數：單一 key 的 JSON；讀寫失敗（隱私模式等）就只記在記憶體
 export class Affection {
@@ -49,7 +50,7 @@ export function buildInteract(o) {
   canvas.addEventListener('pointerdown', (e) => {
     ids.add(e.pointerId);
     if (!e.isPrimary || ids.size > 1 || (e.pointerType === 'mouse' && e.button !== 0)) return cancel();   // 第二根手指或右鍵：是捏合／平移
-    down = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), drag: false, used: false, dog: o.pick(e.clientX, e.clientY) };
+    down = { id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, lim: moveLimit(e.pointerType), t: performance.now(), drag: false, used: false, dog: o.pick(e.clientX, e.clientY) };
     clearTimeout(timer);
     if (down.dog) {
       // 按住不動約半秒 = 摸摸頭；不開也不關詳情卡
@@ -59,21 +60,26 @@ export function buildInteract(o) {
   // 還沒超過移動門檻前把 pointermove 擋下來，OrbitControls 就不會因為手指微微抖動而開始轉；一超過門檻就放行，之後照常旋轉
   window.addEventListener('pointermove', (e) => {
     if (!down || e.pointerId !== down.id || down.drag) return;
-    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > MOVE) { down.drag = true; clearTimeout(timer); return; }
+    down.lx = e.clientX; down.ly = e.clientY;
+    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > down.lim) { down.drag = true; clearTimeout(timer); return; }
     e.stopImmediatePropagation();
   }, true);
-  window.addEventListener('pointerup', (e) => {
+  // 放開（或 iOS 常見的 pointercancel）：時間短、幾乎沒移動就當成點一下；汪！／音效出錯不可擋住開卡
+  const finish = (e, x, y, cancelled) => {
     ids.delete(e.pointerId);
     if (!down || e.pointerId !== down.id) return;
-    const d = down, moved = Math.hypot(e.clientX - d.x, e.clientY - d.y), dt = performance.now() - d.t;
+    const d = down, moved = Math.hypot(x - d.x, y - d.y), dt = performance.now() - d.t;
     cancel();
-    if (d.drag || d.used || moved > MOVE || dt > TAP_MS) return;   // 拖曳、長按、按太久都不算點一下
+    if (d.drag || d.used || moved > d.lim || dt > TAP_MS) return;   // 拖曳、長按、按太久都不算點一下
     api.stats.taps++;
-    const dog = o.pick(e.clientX, e.clientY);
-    if (dog) { api.bark(dog); card.toggle(dog.id); }                // 每次點都會汪；同一隻再點一次會收起卡片
-    else o.onBlank(e.clientX, e.clientY);
-  }, true);
-  window.addEventListener('pointercancel', (e) => { ids.delete(e.pointerId); if (down && e.pointerId === down.id) cancel(); }, true);
+    const dog = o.pick(x, y);
+    if (dog) {
+      try { api.bark(dog); } catch (err) { /* 汪！或音效出錯也要開卡 */ }
+      card.toggle(dog.id);                                          // 每次點都會汪；同一隻再點一次會收起卡片
+    } else if (!cancelled) o.onBlank(x, y);
+  };
+  window.addEventListener('pointerup', (e) => finish(e, e.clientX, e.clientY, false), true);
+  window.addEventListener('pointercancel', (e) => finish(e, down ? down.lx : e.clientX, down ? down.ly : e.clientY, true), true);
   window.addEventListener('blur', () => { ids.clear(); cancel(); });
 
   // ── 詳情卡上的兩顆按鈕：用 pointer 事件並擋住冒泡 ──

@@ -1,6 +1,6 @@
 // 房間外殼：地板、三面牆（含窗戶與窗外景）、梁、時鐘、燈光
 import * as THREE from 'three';
-import { box, cyl, mat, canvasTex, rng } from './kit.js';
+import { box, cyl, mat, canvasTex, rng } from './kit.js?v=20261115c';
 
 const T = 0.3;                 // 牆厚
 const WIN = { y0: 1.5, y1: 4.7 };

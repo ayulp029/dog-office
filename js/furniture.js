@@ -1,7 +1,7 @@
 // 家具：辦公桌椅、盆栽、飲水機、咖啡吧、書架、地毯
 import * as THREE from 'three';
-import { box, cyl, pot, ball, mat, rng } from './kit.js';
-import { bossDesk } from './boss.js';
+import { box, cyl, pot, ball, mat, rng } from './kit.js?v=20261115c';
+import { bossDesk } from './boss.js?v=20261115c';
 
 const WOOD = '#e2c49a', WOOD_D = '#b98f62', WHITE = '#fbf7ef', DARK = '#3b3f48', GREY = '#c9ced6';
 

@@ -1,7 +1,7 @@
 // 主管位：狗管家的主管桌、高背皮椅、深色地毯，以及後牆的「Grok Bot 本週用量」儀表板（canvas 貼圖）
 import * as THREE from 'three';
-import { box, cyl, mat } from './kit.js';
-import { esc } from './card.js';
+import { box, cyl, mat } from './kit.js?v=20261115c';
+import { esc } from './card.js?v=20261115c';
 
 const WOOD = '#5a3a26', WOOD_D = '#3d2618', LEATHER = '#2b211d', GOLD = '#c9a24a', DARK = '#23262d';
 const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';

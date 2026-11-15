@@ -1,6 +1,6 @@
 // 狗狗 billboard：用 assets/dogs/<id>.png 貼在平面上，繞 y 軸面向相機並略微後仰
 import * as THREE from 'three';
-import { canvasTex } from './kit.js';
+import { canvasTex } from './kit.js?v=20261115c';
 
 const PLANE = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0);   // 原點在腳底
 const BLOB = new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2);

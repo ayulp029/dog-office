@@ -1,8 +1,8 @@
 // 閒逛：只有「待命」（含過期變待命）的狗會離開座位在辦公室裡走動，偶爾找另一隻一起玩（play.js）。
 // 狀態一變成工作中／等待中／休息中／離線，就小跑步回座位並留在座位。
 // 每隻狗的 d.r.st：seat 在座位、walk 走向目的地、pause 停下來看看、meet 等玩伴走過來、play 玩耍中、home 回座位、hold 被測試／截圖固定住
-import { buildNav } from './nav.js';
-import { buildPlay } from './play.js';
+import { buildNav } from './nav.js?v=20261115c';
+import { buildPlay } from './play.js?v=20261115c';
 
 const WALK = 1.9, RUN = 3.5, MAXP = 48;
 const rnd = (a, b) => a + Math.random() * (b - a);

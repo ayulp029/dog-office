@@ -1,16 +1,16 @@
 // 主程式：Three.js 場景、相機與 OrbitControls、渲染迴圈、輪詢 status.json，並接上互動（interact.js）、閒逛（roam.js）、特效（fx.js）
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/OrbitControls.js';
-import { buildRoom } from './room.js';
-import { buildFurniture } from './furniture.js';
-import { Dog, loadDogArt } from './dogs.js';
-import { buildRoam } from './roam.js';
-import { buildInteract } from './interact.js';
-import { Fx } from './fx.js';
-import { Sound } from './sound.js';
-import { Labels } from './labels.js';
-import { Card } from './card.js';
-import { buildUsageBoard, usageCardHtml } from './boss.js';
+import { OrbitControls } from 'three/addons/OrbitControls.js?v=20261115c';
+import { buildRoom } from './room.js?v=20261115c';
+import { buildFurniture } from './furniture.js?v=20261115c';
+import { Dog, loadDogArt } from './dogs.js?v=20261115c';
+import { buildRoam } from './roam.js?v=20261115c';
+import { buildInteract } from './interact.js?v=20261115c';
+import { Fx } from './fx.js?v=20261115c';
+import { Sound } from './sound.js?v=20261115c';
+import { Labels } from './labels.js?v=20261115c';
+import { Card } from './card.js?v=20261115c';
+import { buildUsageBoard, usageCardHtml } from './boss.js?v=20261115c';
 
 const DO = window.DO, CFG = DO.CFG, R = CFG.room;
 const Q = new URLSearchParams(location.search);
@@ -107,8 +107,13 @@ function applyData(res) {
 async function pollUsage() {
   if (board.set(await DO.fetchUsage())) card.setInfo(usageCardHtml(board.view));
 }
+// 螢幕座標 → NDC：用畫布實際範圍（iPad Safari 網址列／visual viewport 會讓 innerWidth/Height 與畫布不一致）
+function setNdc(x, y) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((x - r.left) / (r.width || 1)) * 2 - 1, -((y - r.top) / (r.height || 1)) * 2 + 1);
+}
 function hitBoard(x, y) {
-  ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+  setNdc(x, y);
   ray.setFromCamera(ndc, camera);
   return ray.intersectObject(board.mesh, false).length > 0;
 }
@@ -119,15 +124,24 @@ async function poll() {
   setTimeout(poll, CFG.poll);
 }
 
+const PAD = 52;   // 手指寬容命中半徑（px）
 // 點擊：先看標籤，再用射線找狗（略過立繪透明的地方）
 function pick(x, y) {
   const id = labels.hit(x, y);
   if (id) return byId[id];
-  ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+  setNdc(x, y);
   ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(dogs.map((d) => d.mesh), false);
   for (const h of hits) if (h.uv && h.object.userData.dog.opaqueAt(h.uv)) return h.object.userData.dog;
-  return null;
+  // 寬容命中：沒打到不透明像素時，取離頭／身體最近、在 PAD 內的狗（含閒逛中離座的，用牠現在的螢幕位置）
+  let best = null, bd = PAD;
+  for (const d of dogs) {
+    const p = pts[d.id]; if (!p.vis) continue;
+    const bx = p.x + (p.fx - p.x) * 0.55, by = p.y + (p.fy - p.y) * 0.55;
+    const e = Math.min(Math.hypot(x - p.x, y - p.y), Math.hypot(x - bx, y - by));
+    if (e < bd) { bd = e; best = d; }
+  }
+  return best;
 }
 function frame(now) {
   requestAnimationFrame(frame);
